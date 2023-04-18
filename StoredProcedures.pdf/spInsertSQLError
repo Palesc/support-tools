@@ -1,0 +1,26 @@
+USE [DB_Pro]
+GO
+/****** Object:  StoredProcedure [dbo].[spInsertSQLError]    Script Date: 4/18/2023 5:03:33 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[spInsertSQLError] (
+	@Descr varchar(8000),
+	@SQLErrorNumber int,
+	@ProcedureName varchar(255),
+	@LineNumber int,
+	@ParameterList varchar(8000)
+)
+AS
+Begin Try		
+	Insert ErrorMessage(Descr, SQLErrorNumber, ProcedureName, LineNumber, ParameterList)
+	Values (@Descr, @SQLErrorNumber, @ProcedureName, @LineNumber, @ParameterList)
+	
+End Try
+Begin Catch		
+	Select Error_Number(), Error_message(), Error_Procedure(), Error_Line()
+	--Use @Descr instead to pass meaningful message back to asp.net
+	--SQL Server will assign an error number and not error out when trying to raise an invalid error number
+	RAISERROR (@Descr,16,1)	
+End Catch
