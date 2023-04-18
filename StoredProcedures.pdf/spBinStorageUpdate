@@ -1,0 +1,71 @@
+USE [DB_Pro]
+GO
+/****** Object:  StoredProcedure [dbo].[spBinStorageUpdate]    Script Date: 4/18/2023 5:02:41 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spBinStorageUpdate]  
+(
+	   @TblCategoryId	BinStorageCategoryIdType	READONLY	,
+       @BinStorageId	INT										,
+       @BinNameId		INT										,
+	   @Descr			VARCHAR(MAX)							,
+       @Msg			VARCHAR(MAX) OUTPUT
+)
+AS
+BEGIN TRY
+	DECLARE @ParameterList varchar(8000)=	'ProcedureName=[DB].dbo.spBinStorageUpdate'	+ ';' +
+                                            'BinStorageId='		+ COALESCE(Convert(varchar(20), @BinStorageId),'Null')
+    SET @Msg = ''
+
+	BEGIN TRAN
+
+		--********** UPDATE **********--    
+		Update dbo.BinStorage
+		SET Descr = @Descr,
+			BinNameID = @BinNameId
+		WHERE BinStorageId = @BinStorageId
+		--****************************--
+		IF EXISTS (SELECT 1 FROM @TblCategoryId)
+			BEGIN
+				--********** DELETE **********--
+				DELETE FROM BinTags
+				WHERE BinStorageID = @BinStorageId
+				--****************************--
+
+				--********** INSERT **********--
+				INSERT INTO dbo.BinTags
+				(
+					BinStorageID,
+					BinCategoryID
+				)
+				SELECT @BinStorageID,
+					   CategoryId
+				FROM @TblCategoryId
+				--****************************--
+			END
+       IF @@TRANCOUNT > 0
+              BEGIN
+                     COMMIT TRAN
+                     RETURN 10
+              END
+
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+       BEGIN
+              ROLLBACK TRAN
+       END
+
+    DECLARE	@ErrorLine		INT				= ERROR_LINE(),
+			@ErrorNumber	INT				= ERROR_NUMBER(),
+			@ErrorMessage	VARCHAR(8000)	= ERROR_MESSAGE(),
+			@ErrorProcedure	VARCHAR(255)	= '[DB].dbo.spBinStorageUpdate;'
+												+ COALESCE(ERROR_PROCEDURE(), '')
+				
+    SET @Msg = @ErrorMessage
+    RETURN 99
+END CATCH
+
