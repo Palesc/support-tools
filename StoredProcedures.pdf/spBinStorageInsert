@@ -1,0 +1,72 @@
+USE [DB_Pro]
+GO
+/****** Object:  StoredProcedure [dbo].[spBinStorageInsert]    Script Date: 4/18/2023 5:00:17 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spBinStorageInsert]  
+(
+	   @TblCategoryId	BinStorageCategoryIdType	READONLY	,
+     @BinNameId		INT										    ,
+	   @Descr			  VARCHAR(MAX)							,
+     @Msg			    VARCHAR(MAX) OUTPUT
+)
+AS
+BEGIN TRY
+	DECLARE @ParameterList varchar(8000)=	'ProcedureName=[DB].dbo.spBinStorageInsert'	+ ';' +
+                                            'BinNameId='		+ COALESCE(Convert(varchar(20), @BinNameId),'Null')		+ ';' +
+                                            'Descr='			+ COALESCE(Convert(varchar(max), @Descr),'Null')	
+    SET @Msg = ''
+
+	BEGIN TRAN
+
+
+		--********** INSERT **********-- 
+		INSERT INTO dbo.BinStorage
+		(
+		    BinNameId,
+			Descr
+		)
+		VALUES
+		(   
+			@BinNameId,
+			@Descr
+		)
+
+		DECLARE @BinStorageID INT = SCOPE_IDENTITY()
+
+		INSERT INTO dbo.BinTags
+		(
+			BinStorageID,
+			BinCategoryID
+		)
+		SELECT @BinStorageID,
+			   CategoryId
+		FROM @TblCategoryId
+		--****************************--
+
+       IF @@TRANCOUNT > 0
+              BEGIN
+                     COMMIT TRAN
+                     RETURN 10
+              END
+
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+       BEGIN
+              ROLLBACK TRAN
+       END
+
+    DECLARE	@ErrorLine		INT				= ERROR_LINE(),
+			@ErrorNumber	INT				= ERROR_NUMBER(),
+			@ErrorMessage	VARCHAR(8000)	= ERROR_MESSAGE(),
+			@ErrorProcedure	VARCHAR(255)	= '[DB].dbo.spBinStorageInsert;'
+												+ COALESCE(ERROR_PROCEDURE(), '')
+				
+    SET @Msg = @ErrorMessage
+    RETURN 99
+END CATCH
+
