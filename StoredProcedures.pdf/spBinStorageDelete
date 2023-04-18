@@ -1,0 +1,52 @@
+USE [DB_Pro]
+GO
+/****** Object:  StoredProcedure [dbo].[spBinStorageDelete]    Script Date: 4/18/2023 4:58:28 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[spBinStorageDelete]  
+(
+       @BinStorageId	INT						,
+       @Msg				VARCHAR(MAX) OUTPUT
+)
+AS
+BEGIN TRY
+	DECLARE @ParameterList varchar(8000)=	'ProcedureName=[DB].dbo.spBinStorageDelete'	+ ';' +
+                                            'BinStorageId='		+ COALESCE(Convert(varchar(20), @BinStorageId),'Null')
+    SET @Msg = ''
+
+	BEGIN TRAN
+
+		--********** DELETE **********-- 
+		DELETE dbo.BinStorage
+		WHERE BinStorageId = @BinStorageId
+
+		DELETE dbo.BinTags
+		where BinStorageID = @BinStorageId
+		--****************************--
+
+       IF @@TRANCOUNT > 0
+              BEGIN
+                     COMMIT TRAN
+                     RETURN 10
+              END
+
+END TRY
+BEGIN CATCH
+	IF @@TRANCOUNT > 0
+       BEGIN
+              ROLLBACK TRAN
+       END
+
+    DECLARE	@ErrorLine		INT				= ERROR_LINE(),
+			@ErrorNumber	INT				= ERROR_NUMBER(),
+			@ErrorMessage	VARCHAR(8000)	= ERROR_MESSAGE(),
+			@ErrorProcedure	VARCHAR(255)	= '[DB].dbo.spBinStorageDelete;'
+												+ COALESCE(ERROR_PROCEDURE(), '')
+				
+    SET @Msg = @ErrorMessage
+    RETURN 99
+END CATCH
+
