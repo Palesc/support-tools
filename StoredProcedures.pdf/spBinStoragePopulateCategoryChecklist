@@ -1,0 +1,40 @@
+USE [DB_Pro]
+GO
+/****** Object:  StoredProcedure [dbo].[spBinStoragePopulateCategoryChecklist]    Script Date: 4/18/2023 5:01:48 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+ALTER PROCEDURE [dbo].[spBinStoragePopulateCategoryChecklist]
+AS 
+
+BEGIN TRY 
+	SET NOCOUNT ON;
+
+	DECLARE @ParameterList varchar(8000) = 'ProcedureName=DB.dbo.spBinStoragePopulateCategoryChecklist;No Parameters'
+
+    SELECT	BinCategoryID As chkValue,
+			Descr As chkText
+    FROM dbo.BinCategory
+	ORDER BY IsColor, chkText
+
+    RETURN 10
+
+END TRY
+BEGIN CATCH 
+
+	DECLARE @ErrorLine		INT				= ERROR_LINE()				,
+			@ErrorNumber	INT				= ERROR_NUMBER()			,
+			@ErrorMessage	VARCHAR(8000)	= ERROR_MESSAGE()			,
+            @ErrorProcedure	VARCHAR(255)	= 'DB.dbo.spBinStoragePopulateCategoryChecklist' + ';' +
+												COALESCE(ERROR_PROCEDURE(), '')
+            
+
+	EXEC dbo.spInsertSQLError @ErrorMessage, @ErrorNumber, @ErrorProcedure, @ErrorLine, @ParameterList
+
+	RETURN 99
+
+END CATCH
+
